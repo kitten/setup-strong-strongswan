@@ -141,11 +141,6 @@ chmod 600 /etc/ipsec.d/private/xauthKey.pem
 ipsec pki --pub --in /etc/ipsec.d/private/xauthKey.pem --type rsa | ipsec pki --issue --lifetime 730 --cacert /etc/ipsec.d/cacerts/strongswanCert.pem --cakey /etc/ipsec.d/private/strongswanKey.pem --dn "C=CH, O=strongSwan, CN=xauth" --san $HOSTNAME --outform pem > /etc/ipsec.d/certs/xauthCert.pem
 openssl pkcs12 -export -inkey /etc/ipsec.d/private/xauthKey.pem -in /etc/ipsec.d/certs/xauthCert.pem -name "XAuth VPN Certificate" -certfile /etc/ipsec.d/cacerts/strongswanCert.pem -caname "strongSwan Root CA" -out /var/xauth.p12
 
-ipsec pki --gen --type rsa --size 2048 --outform pem > /etc/ipsec.d/private/eapKey.pem
-chmod 600 /etc/ipsec.d/private/eapKey.pem
-ipsec pki --pub --in /etc/ipsec.d/private/eapKey.pem --type rsa | ipsec pki --issue --lifetime 730 --cacert /etc/ipsec.d/cacerts/strongswanCert.pem --cakey /etc/ipsec.d/private/strongswanKey.pem --dn "C=CH, O=strongSwan, CN=eap" --san $HOSTNAME --outform pem > /etc/ipsec.d/certs/eapCert.pem
-openssl pkcs12 -export -inkey /etc/ipsec.d/private/eapKey.pem -in /etc/ipsec.d/certs/eapCert.pem -name "EAP VPN Certificate" -certfile /etc/ipsec.d/cacerts/strongswanCert.pem -caname "strongSwan Root CA" -out /var/eap.p12
-
 openssl x509 -in /etc/ipsec.d/cacerts/strongswanCert.pem -outform DER -out /etc/ipsec.d/cacerts/strongswanCert.der
 cp /etc/ipsec.d/cacerts/strongswanCert.der /var/strongswanCert.der
 
@@ -178,8 +173,7 @@ conn IPSec-IKEv2
 
 conn IPSec-IKEv2-EAP
         also="IPSec-IKEv2"
-        rightauth=pubkey
-        rightauth2=eap-mschapv2
+        rightauth=eap-mschapv2
         rightsendcert=never
         eap_identity=%any
 
@@ -277,7 +271,7 @@ echo ""
 echo "============================================================"
 echo "Host: $HOSTNAME"
 echo "Password: $SECUREKEY"
-echo "Download the certificates: /var/xauth.p12; /var/eap.p12"
+echo "You'll need this certificate for XAuth RSA: /var/xauth.p12"
 echo "(Please reboot to ensure, that all changes are applied)"
 echo "============================================================"
 

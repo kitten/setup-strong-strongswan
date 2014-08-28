@@ -56,16 +56,13 @@ Certificate: "xauth (strongSwan Root CA)"
 
 ## Android StrongSwan
 
-Download the certificate at */var/eap.p12* and install it.
-
 Use the following data to connect:
 
 ```
 Gateway: [Your chosen hostname / domain]
-Type: "IKEv2 Certificate + EAP (Username/Password)"
+Type: "IKEv2 EAP (Username/Password)"
 Username: "eap"
 Password: [The random password / your chosen password, created during setup]
-Certificate: "EAP Certificate"
 CA Certificate: "strongSwan Root CA"
 ```
 
