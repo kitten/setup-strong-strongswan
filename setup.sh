@@ -87,9 +87,13 @@ echo ""
 
 echo "Installing necessary dependencies..."
 
-apt-get update > /dev/null
-apt-get upgrade > /dev/null
-apt-get install build-essential openssl wget -y  > /dev/null
+echo ""
+echo "============================================================"
+apt-get update
+apt-get upgrade -y
+apt-get install build-essential openssl libssl-dev wget -y
+echo "============================================================"
+echo ""
 
 if [ "$?" = "1" ]
 then
@@ -98,24 +102,20 @@ then
 fi
 
 echo "Installing StrongSwan..."
+
 apt-get install libstrongswan strongswan strongswan-ike strongswan-plugin-af-alg strongswan-plugin-agent strongswan-plugin-dnscert strongswan-plugin-dnskey strongswan-plugin-eap-gtc strongswan-plugin-eap-md5 strongswan-plugin-eap-mschapv2 strongswan-plugin-fips-prf strongswan-plugin-openssl strongswan-plugin-pubkey strongswan-plugin-unbound strongswan-plugin-xauth-eap strongswan-plugin-xauth-generic strongswan-plugin-xauth-noauth strongswan-plugin-xauth-pam strongswan-starter -y > /dev/null
 
-if [ "$?" = "1" ]
-then
-  echo "An unexpected error occured!"
-  exit 0
-fi
-
 # Compile and install StrongSwan
-# mkdir -p /opt/src
-# cd /opt/src
-# echo "Downloading StrongSwan's source..."
-# wget -qO- http://download.strongswan.org/strongswan-5.2.0.tar.gz | tar xvz > /dev/null
-# cd strongswan-5.2.0
-# echo "Configuring StrongSwan..."
-# ./configure > /dev/null
-# echo "Installing StrongSwan..."
-# make install > /dev/null
+mkdir -p /opt/src
+cd /opt/src
+echo "Downloading StrongSwan's source..."
+wget -qO- http://download.strongswan.org/strongswan-5.2.0.tar.gz | tar xvz > /dev/null
+cd strongswan-5.2.0
+echo "Configuring StrongSwan..."
+./configure --disable-gmp --enable-openssl --prefix=/usr --sysconfdir=/etc > /dev/null
+echo "Upgrading StrongSwan..."
+make > /dev/null
+make install > /dev/null
 
 if [ "$?" = "1" ]
 then
@@ -126,6 +126,11 @@ fi
 echo "Generating /var folder"
 mkdir /var > /dev/null
 chmod -R 755 /var
+
+echo "Generating IPSec folders"
+mkdir -p /etc/ipsec.d/certs/ > /dev/null
+mkdir -p /etc/ipsec.d/private/ > /dev/null
+mkdir -p /etc/ipsec.d/cacerts/ > /dev/null
 
 echo "Creating all necessary certificates..."
 
@@ -139,7 +144,7 @@ ipsec pki --pub --in /etc/ipsec.d/private/vpnHostKey.pem --type rsa | ipsec pki 
 ipsec pki --gen --type rsa --size 2048 --outform pem > /etc/ipsec.d/private/xauthKey.pem
 chmod 600 /etc/ipsec.d/private/xauthKey.pem
 ipsec pki --pub --in /etc/ipsec.d/private/xauthKey.pem --type rsa | ipsec pki --issue --lifetime 730 --cacert /etc/ipsec.d/cacerts/strongswanCert.pem --cakey /etc/ipsec.d/private/strongswanKey.pem --dn "C=CH, O=strongSwan, CN=xauth" --san $HOSTNAME --outform pem > /etc/ipsec.d/certs/xauthCert.pem
-openssl pkcs12 -export -inkey /etc/ipsec.d/private/xauthKey.pem -in /etc/ipsec.d/certs/xauthCert.pem -name "XAuth VPN Certificate" -certfile /etc/ipsec.d/cacerts/strongswanCert.pem -caname "strongSwan Root CA" -out /var/xauth.p12
+openssl pkcs12 -export -inkey /etc/ipsec.d/private/xauthKey.pem -in /etc/ipsec.d/certs/xauthCert.pem -name "XAuth VPN Certificate" -certfile /etc/ipsec.d/cacerts/strongswanCert.pem -caname "strongSwan Root CA" -out /var/xauth.p12 -password pass:
 
 openssl x509 -in /etc/ipsec.d/cacerts/strongswanCert.pem -outform DER -out /etc/ipsec.d/cacerts/strongswanCert.der
 cp /etc/ipsec.d/cacerts/strongswanCert.der /var/strongswanCert.der
@@ -242,7 +247,7 @@ do
   echo 0 > $each/send_redirects
 done
 
-/usr/sbin/service ipsec restart
+#/usr/sbin/service ipsec restart
 /usr/sbin/service strongswan restart
 
 exit 0
@@ -263,7 +268,7 @@ ipsec rereadsecrets > /dev/null
 echo "Starting StrongSwan services..."
 
 /usr/sbin/service strongswan restart > /dev/null
-/usr/sbin/service ipsec restart > /dev/null
+#/usr/sbin/service ipsec restart > /dev/null
 
 echo "Success!"
 echo ""
