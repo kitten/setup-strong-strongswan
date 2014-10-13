@@ -105,18 +105,6 @@ echo "Installing StrongSwan..."
 
 apt-get install libstrongswan strongswan strongswan-ike strongswan-plugin-af-alg strongswan-plugin-agent strongswan-plugin-dnscert strongswan-plugin-dnskey strongswan-plugin-eap-gtc strongswan-plugin-eap-md5 strongswan-plugin-eap-mschapv2 strongswan-plugin-fips-prf strongswan-plugin-openssl strongswan-plugin-pubkey strongswan-plugin-unbound strongswan-plugin-xauth-eap strongswan-plugin-xauth-generic strongswan-plugin-xauth-noauth strongswan-plugin-xauth-pam strongswan-starter -y > /dev/null
 
-# Compile and install StrongSwan
-mkdir -p /opt/src
-cd /opt/src
-echo "Downloading StrongSwan's source..."
-wget -qO- http://download.strongswan.org/strongswan-5.2.0.tar.gz | tar xvz > /dev/null
-cd strongswan-5.2.0
-echo "Configuring StrongSwan..."
-./configure --disable-gmp --enable-openssl --prefix=/usr --sysconfdir=/etc > /dev/null
-echo "Upgrading StrongSwan..."
-make > /dev/null
-make install > /dev/null
-
 if [ "$?" = "1" ]
 then
   echo "An unexpected error occured!"
@@ -183,14 +171,10 @@ conn IPSec-IKEv2-EAP
         eap_identity=%any
 
 conn CiscoIPSec
-        esp=aes256-sha256-modp2048,aes256-sha1!
-        ike=aes256-sha1-modp1536,aes256-sha512-modp1024,aes256-sha1-modp1024!
         keyexchange=ikev1
-        leftauth=pubkey
         rightauth=pubkey
         rightauth2=xauth
         auto=add
-        leftid=@$HOSTNAME
 
 EOF
 
