@@ -1,9 +1,9 @@
 #!/bin/sh
-#    Setup Strong StrongSwan server for Ubuntu and Debian
+#    Setup Strong strongSwan server for Ubuntu and Debian
 #
-#    Copyright (C) 2014 Phil Plückthun <phil@plckthn.me>
-#    Based on the work of Viljo Viitanen (Setup Simple PPTP VPN server for Ubuntu and Debian)
-#    Based on the work of Thomas Sarlandie (Copyright 2012)
+#    Copyright (C) 2014-2015 Phil Plückthun <phil@plckthn.me>
+#    Based on Strongswan on Docker
+#    https://github.com/philplckthun/docker-strongswan
 #
 #    This work is licensed under the Creative Commons Attribution-ShareAlike 3.0
 #    Unported License: http://creativecommons.org/licenses/by-sa/3.0/
@@ -15,23 +15,43 @@ then
   exit 0
 fi
 
-lsb_release -c | grep trusty > /dev/null
-if [ "$?" = "1" ]
-then
-  echo "This script was designed to run on Ubuntu 14.04 Trusty!"
-  echo "Do you wish to continue anyway?"
-  while true; do
-    read -p "" yn
-    case $yn in
-        [Yy]* ) break;;
-        [Nn]* ) exit 0;;
-        * ) echo "Please answer with Yes or No [y|n].";;
-    esac
-  done
-  echo ""
-fi
+#################################################################
+# Variables
 
-echo "This script will install a StrongSwan VPN Server"
+STRONGSWAN_TMP="/tmp/strongswan"
+STRONGSWAN_VERSION="5.3.4"
+#STRONGSWAN_USER
+#STRONGSWAN_PSK
+
+#################################################################
+# Functions
+
+function call() {
+  eval "$@ > /dev/null 2>&1"
+}
+
+function generateKey() {
+  P1=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
+  P2=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
+  P3=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
+  KEY="$P1$P2$P3"
+}
+
+function bigEcho() {
+  echo ""
+  echo "============================================================"
+  echo "$@"
+  echo "============================================================"
+  echo ""
+}
+
+function pacapt() {
+  eval "$STRONGSWAN_TMP/pacapt $@"
+}
+
+#################################################################
+
+echo "This script will install strongSwan on this machine."
 echo "Do you wish to continue?"
 
 while true; do
@@ -43,201 +63,279 @@ while true; do
   esac
 done
 
-echo ""
+#################################################################
 
-# Generate a random key
-generateKey () {
-  P1=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
-  P2=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
-  P3=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
-  SECUREKEY="$P1$P2$P3"
-}
+# Clean up and create compilation environment
+call rm -rf $STRONGSWAN_TMP
+call mkdir -p $STRONGSWAN_TMP
 
-echo "The VPN needs a password, which will be used for both, authentication and certificate encryption."
-echo "Do you wish to set it yourself?"
-echo "(Otherwise a random key is generated)"
-while true; do
-  read -p "" yn
-  case $yn in
-      [Yy]* ) echo ""; echo "Enter your preferred key:"; read -p "" SECUREKEY; break;;
-      [Nn]* ) generateKey; break;;
-      * ) echo "Please answer with Yes or No [y|n].";;
-  esac
-done
-
-echo ""
-echo "The key you chose is: '$SECUREKEY'."
-echo "Please save it, because you'll need it to connect and set up the certificates!"
-echo ""
-
-echo "The VPN needs a domain. Do you wish to set it yourself?"
-echo "(Otherwise the hostname is used)"
-while true; do
-  read -p "" yn
-  case $yn in
-      [Yy]* ) echo ""; echo "Enter your preferred hostname:"; read -p "" HOSTNAME; break;;
-      [Nn]* ) HOSTNAME=`hostname`; break;;
-      * ) echo "Please answer with Yes or No [y|n].";;
-  esac
-done
-
-echo ""
-echo "============================================================"
-echo ""
-
-echo "Installing necessary dependencies..."
-
-echo ""
-echo "============================================================"
-apt-get update
-apt-get upgrade -y
-apt-get install build-essential openssl libssl-dev wget -y
-echo "============================================================"
-echo ""
-
+curl -sSL "https://github.com/icy/pacapt/raw/ng/pacapt" > $STRONGSWAN_TMP/pacapt
 if [ "$?" = "1" ]
 then
-  echo "An unexpected error occured!"
+  bigEcho "An unexpected error occured while downloading pacapt!"
   exit 0
 fi
 
-echo "Installing StrongSwan..."
+call chmod +x $STRONGSWAN_TMP/pacapt
 
-apt-get install libstrongswan strongswan strongswan-ike strongswan-plugin-af-alg strongswan-plugin-agent strongswan-plugin-dnscert strongswan-plugin-dnskey strongswan-plugin-eap-gtc strongswan-plugin-eap-md5 strongswan-plugin-eap-mschapv2 strongswan-plugin-fips-prf strongswan-plugin-openssl strongswan-plugin-pubkey strongswan-plugin-unbound strongswan-plugin-xauth-eap strongswan-plugin-xauth-generic strongswan-plugin-xauth-noauth strongswan-plugin-xauth-pam strongswan-starter -y > /dev/null
+echo ""
+
+#################################################################
+
+if [ "$STRONGSWAN_PSK" = "" ]; then
+  echo "The VPN needs a PSK (Pre-shared key)."
+  echo "Do you wish to set it yourself?"
+  echo "(Otherwise a random one is generated)"
+  while true; do
+    read -p "" yn
+    case $yn in
+      [Yy]* ) echo ""; echo "Enter your preferred key:"; read -p "" STRONGSWAN_PSK; break;;
+      [Nn]* ) generateKey; STRONGSWAN_PSK=KEY; break;;
+      * ) echo "Please answer with Yes or No [y|n].";;
+    esac
+  done
+
+  echo ""
+  echo "The PSK is: '$STRONGSWAN_PSK'."
+  echo ""
+fi
+
+#################################################################
+
+if [ "$STRONGSWAN_USER" = "" ]; then
+  read -p "Please enter your preferred username [user]: " STRONGSWAN_USER
+
+  if [ "$STRONGSWAN_USER" = "" ]
+  then
+    STRONGSWAN_USER="vpn"
+  fi
+fi
+
+#################################################################
+
+if [ "$STRONGSWAN_PASSWORD" = "" ]; then
+  echo "The VPN user '$STRONGSWAN_USER' needs a password."
+  echo "Do you wish to set it yourself?"
+  echo "(Otherwise a random one is generated)"
+  while true; do
+    read -p "" yn
+    case $yn in
+      [Yy]* ) echo ""; echo "Enter your preferred key:"; read -p "" STRONGSWAN_PASSWORD; break;;
+      [Nn]* ) generateKey; STRONGSWAN_PASSWORD=KEY; break;;
+      * ) echo "Please answer with Yes or No [y|n].";;
+    esac
+  done
+
+  echo ""
+  echo "The password is: '$STRONGSWAN_PASSWORD'."
+  echo ""
+fi
+
+#################################################################
+
+bigEcho "Installing necessary dependencies"
+
+pacapt -S
+pacapt -S make g++ gcc libgmp-dev iptables xl2tpd libssl-dev
 
 if [ "$?" = "1" ]
 then
-  echo "An unexpected error occured!"
+  bigEcho "An unexpected error occured!"
   exit 0
 fi
 
-echo "Generating /var folder"
-mkdir /var > /dev/null
-chmod -R 755 /var
+#################################################################
 
-echo "Generating IPSec folders"
-mkdir -p /etc/ipsec.d/certs/ > /dev/null
-mkdir -p /etc/ipsec.d/private/ > /dev/null
-mkdir -p /etc/ipsec.d/cacerts/ > /dev/null
+bigEcho "Installing StrongSwan..."
 
-echo "Creating all necessary certificates..."
+call mkdir -p $STRONGSWAN_TMP/src
+curl -sSL "https://download.strongswan.org/strongswan-$STRONGSWAN_VERSION.tar.gz" | tar -zxC $STRONGSWAN_TMP/src --strip-components 1
 
-ipsec pki --gen --type rsa --size 4096 --outform pem > /etc/ipsec.d/private/strongswanKey.pem
-chmod 600 /etc/ipsec.d/private/strongswanKey.pem
-ipsec pki --self --ca --lifetime 3650 --in /etc/ipsec.d/private/strongswanKey.pem --type rsa --dn "C=CH, O=strongSwan, CN=strongSwan Root CA" --outform pem > /etc/ipsec.d/cacerts/strongswanCert.pem
-ipsec pki --gen --type rsa --size 2048 --outform pem > /etc/ipsec.d/private/vpnHostKey.pem
-chmod 600 /etc/ipsec.d/private/vpnHostKey.pem
-ipsec pki --pub --in /etc/ipsec.d/private/vpnHostKey.pem --type rsa | ipsec pki --issue --lifetime 730 --cacert /etc/ipsec.d/cacerts/strongswanCert.pem --cakey /etc/ipsec.d/private/strongswanKey.pem --dn "C=CH, O=strongSwan, CN=$HOSTNAME" --san $HOSTNAME --flag serverAuth --flag ikeIntermediate --outform pem > /etc/ipsec.d/certs/vpnHostCert.pem
+if [ "$?" = "1" ]
+then
+  bigEcho "An unexpected error occured while downloading strongSwan source!"
+  exit 0
+fi
 
-ipsec pki --gen --type rsa --size 2048 --outform pem > /etc/ipsec.d/private/xauthKey.pem
-chmod 600 /etc/ipsec.d/private/xauthKey.pem
-ipsec pki --pub --in /etc/ipsec.d/private/xauthKey.pem --type rsa | ipsec pki --issue --lifetime 730 --cacert /etc/ipsec.d/cacerts/strongswanCert.pem --cakey /etc/ipsec.d/private/strongswanKey.pem --dn "C=CH, O=strongSwan, CN=xauth" --san $HOSTNAME --outform pem > /etc/ipsec.d/certs/xauthCert.pem
-openssl pkcs12 -export -inkey /etc/ipsec.d/private/xauthKey.pem -in /etc/ipsec.d/certs/xauthCert.pem -name "XAuth VPN Certificate" -certfile /etc/ipsec.d/cacerts/strongswanCert.pem -caname "strongSwan Root CA" -out /var/xauth.p12 -password pass:$SECUREKEY
+cd $STRONGSWAN_TMP/src
+./configure --prefix=/usr --sysconfdir=/etc \
+  --enable-eap-radius \
+  --enable-eap-mschapv2 \
+  --enable-eap-identity \
+  --enable-eap-md5 \
+  --enable-eap-mschapv2 \
+  --enable-eap-tls \
+  --enable-eap-ttls \
+  --enable-eap-peap \
+  --enable-eap-tnc \
+  --enable-eap-dynamic \
+  --enable-xauth-eap \
+  --enable-openssl
+make
+make install
 
-openssl x509 -in /etc/ipsec.d/cacerts/strongswanCert.pem -outform DER -out /etc/ipsec.d/cacerts/strongswanCert.der
-cp /etc/ipsec.d/cacerts/strongswanCert.der /var/strongswanCert.der
+#################################################################
 
-echo "Preparing various configuration files..."
+bigEcho "Cleaning up..."
+
+call rm -rf $STRONGSWAN_TMP
+
+#################################################################
+
+bigEcho "Preparing various configuration files..."
 
 cat > /etc/ipsec.conf <<EOF
 # ipsec.conf - strongSwan IPsec configuration file
 
 config setup
-        uniqueids=never
-        charondebug="cfg 2, dmn 2, ike 2, net 2"
+  uniqueids=no
+  charondebug="cfg 2, dmn 2, ike 2, net 0"
 
 conn %default
-        keyexchange=ikev2
-        ike=aes128-sha256-ecp256,aes256-sha384-ecp384,aes128-sha256-modp2048,aes256-sha384-modp4096,aes256-sha256-modp4096,aes128-sha256-modp1536,aes256-sha3$
-        esp=aes128gcm16-ecp256,aes256gcm16-ecp384,aes128-sha256-ecp256,aes256-sha384-ecp384,aes128-sha256-modp2048,aes256-sha384-modp4096,aes256-sha256-modp4$
-        dpdaction=clear
-        dpddelay=300s
-        rekey=no
-        left=%any
-        leftsubnet=0.0.0.0/0
-        leftcert=vpnHostCert.pem
-        right=%any
-        rightdns=8.26.56.26,8.20.247.20
-        rightsourceip=172.16.16.0/24
+  dpdaction=clear
+  dpddelay=300s
+  rekey=no
+  left=%defaultroute
+  leftfirewall=yes
+  right=%any
+  ikelifetime=60m
+  keylife=20m
+  rekeymargin=3m
+  keyingtries=1
+  auto=add
 
-conn IPSec-IKEv2
-        keyexchange=ikev2
-        auto=add
+#######################################
+# L2TP Connections
+#######################################
 
-conn IPSec-IKEv2-EAP
-        also="IPSec-IKEv2"
-        rightauth=eap-mschapv2
-        rightsendcert=never
-        eap_identity=%any
+conn L2TP-IKEv1-PSK
+  type=transport
+  keyexchange=ikev1
+  authby=secret
+  leftprotoport=udp/l2tp
+  left=%any
+  right=%any
+  rekey=no
+  forceencaps=yes
 
-conn CiscoIPSec
-        keyexchange=ikev1
-        rightauth=pubkey
-        rightauth2=xauth
-        auto=add
+#######################################
+# Default non L2TP Connections
+#######################################
+
+conn Non-L2TP
+  leftsubnet=0.0.0.0/0
+  rightsubnet=10.0.0.0/24
+  rightsourceip=10.0.0.0/24
+
+#######################################
+# EAP Connections
+#######################################
+
+# This detects a supported EAP method
+conn IKEv2-EAP
+  also=Non-L2TP
+  keyexchange=ikev2
+  eap_identity=%any
+  rightauth=eap-dynamic
+
+#######################################
+# PSK Connections
+#######################################
+
+conn IKEv2-PSK
+  also=Non-L2TP
+  keyexchange=ikev2
+  authby=secret
+
+# Cisco IPSec
+conn IKEv1-PSK-XAuth
+  also=Non-L2TP
+  keyexchange=ikev1
+  leftauth=psk
+  rightauth=psk
+  rightauth2=xauth
 
 EOF
 
 cat > /etc/ipsec.secrets <<EOF
 # This file holds shared secrets or RSA private keys for authentication.
-
 # RSA private key for this host, authenticating it to any other host
 # which knows the public part.  Suitable public keys, for ipsec.conf, DNS,
 # or configuration of other implementations, can be extracted conveniently
 # with "ipsec showhostkey".
 
-: RSA vpnHostKey.pem
-eap : EAP "$SECUREKEY"
-xauth : XAUTH "$SECUREKEY"
+: PSK "$STRONGSWAN_PSK"
+
+$STRONGSWAN_USER : EAP "$STRONGSWAN_PASSWORD"
+$STRONGSWAN_USER : XAUTH "$STRONGSWAN_PASSWORD"
 EOF
 
 cat > /etc/strongswan.conf <<EOF
+# /etc/strongswan.conf - strongSwan configuration file
 # strongswan.conf - strongSwan configuration file
 #
 # Refer to the strongswan.conf(5) manpage for details
-#
-# Configuration changes should be made in the included files
 
 charon {
-        load_modular = yes
-        plugins {
-                include strongswan.d/charon/*.conf
-        }
+  load_modular = yes
+  send_vendor_id = yes
+  plugins {
+    include strongswan.d/charon/*.conf
+    attr {
+      dns = 8.8.8.8, 8.8.4.4
+    }
+  }
 }
 
 include strongswan.d/*.conf
 EOF
 
-/bin/cp -f /etc/rc.local /etc/rc.local.old
-cat > /etc/rc.local <<EOF
-#!/bin/sh -e
-#
-# rc.local
-#
-# This script is executed at the end of each multiuser runlevel.
-# Make sure that the script will "exit 0" on success or any other
-# value on error.
-#
-# In order to enable or disable this script just change the execution
-# bits.
-#
-# By default this script does nothing.
-
-iptables --table nat --append POSTROUTING --jump MASQUERADE
-echo 1 > /proc/sys/net/ipv4/ip_forward
-for each in /proc/sys/net/ipv4/conf/*
-do
-  echo 0 > $each/accept_redirects
-  echo 0 > $each/send_redirects
-done
-
-#/usr/sbin/service ipsec restart
-/usr/sbin/service strongswan restart
-
-exit 0
+cat > /etc/xl2tpd/xl2tpd.conf <<EOF
+[global]
+port = 1701
+auth file = /etc/ppp/l2tp-secrets
+debug avp = yes
+debug network = yes
+debug state = yes
+debug tunnel = yes
+[lns default]
+ip range = 10.1.0.2-10.1.0.254
+local ip = 10.1.0.1
+require chap = yes
+refuse pap = yes
+require authentication = yes
+name = l2tpd
+;ppp debug = yes
+pppoptfile = /etc/ppp/options.xl2tpd
+length bit = yes
 EOF
 
-echo "Applying changes..."
+cat > /etc/ppp/options.xl2tpd <<EOF
+ipcp-accept-local
+ipcp-accept-remote
+ms-dns 8.8.8.8
+ms-dns 8.8.4.4
+noccp
+auth
+crtscts
+idle 1800
+mtu 1280
+mru 1280
+lock
+lcp-echo-failure 10
+lcp-echo-interval 60
+connect-delay 5000
+EOF
+
+cat > /etc/ppp/l2tp-secrets <<EOF
+# This file holds secrets for L2TP authentication.
+# Username  Server  Secret  Hosts
+"$STRONGSWAN_USER" "*" "$STRONGSWAN_PASSWORD" "*"
+EOF
+
+#################################################################
+
+bigEcho "Applying changes..."
 
 iptables --table nat --append POSTROUTING --jump MASQUERADE
 echo 1 > /proc/sys/net/ipv4/ip_forward
@@ -247,22 +345,9 @@ do
   echo 0 > $each/send_redirects
 done
 
-ipsec rereadsecrets > /dev/null
+#################################################################
 
-echo "Starting StrongSwan services..."
-
-/usr/sbin/service strongswan restart > /dev/null
-#/usr/sbin/service ipsec restart > /dev/null
-
-echo "Success!"
-echo ""
-
-echo "============================================================"
-echo "Host: $HOSTNAME"
-echo "Password: $SECUREKEY"
-echo "You'll need this certificate for XAuth RSA: /var/xauth.p12"
-echo "(Please reboot to ensure, that all changes are applied)"
-echo "============================================================"
+bigEcho "Success!\n# Don't forget to open ports 1701, 4500 and 500 for UDP."
 
 sleep 2
 exit 0
