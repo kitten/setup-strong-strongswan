@@ -132,7 +132,7 @@ ipsec pki --pub --in /etc/ipsec.d/private/vpnHostKey.pem --type rsa | ipsec pki 
 ipsec pki --gen --type rsa --size 2048 --outform pem > /etc/ipsec.d/private/xauthKey.pem
 chmod 600 /etc/ipsec.d/private/xauthKey.pem
 ipsec pki --pub --in /etc/ipsec.d/private/xauthKey.pem --type rsa | ipsec pki --issue --lifetime 730 --cacert /etc/ipsec.d/cacerts/strongswanCert.pem --cakey /etc/ipsec.d/private/strongswanKey.pem --dn "C=CH, O=strongSwan, CN=xauth" --san $HOSTNAME --outform pem > /etc/ipsec.d/certs/xauthCert.pem
-openssl pkcs12 -export -inkey /etc/ipsec.d/private/xauthKey.pem -in /etc/ipsec.d/certs/xauthCert.pem -name "XAuth VPN Certificate" -certfile /etc/ipsec.d/cacerts/strongswanCert.pem -caname "strongSwan Root CA" -out /var/xauth.p12 -password pass:$SECUREKEY
+openssl pkcs12 -export -inkey /etc/ipsec.d/private/xauthKey.pem -in /etc/ipsec.d/certs/xauthCert.pem -name "XAuth VPN Certificate" -certfile /etc/ipsec.d/cacerts/strongswanCert.pem -caname "strongSwan Root CA" -out /var/xauth.p12 -password pass:"$SECUREKEY"
 
 openssl x509 -in /etc/ipsec.d/cacerts/strongswanCert.pem -outform DER -out /etc/ipsec.d/cacerts/strongswanCert.der
 cp /etc/ipsec.d/cacerts/strongswanCert.der /var/strongswanCert.der
