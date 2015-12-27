@@ -174,10 +174,10 @@ echo ""
 
 bigEcho "Installing necessary dependencies"
 
-pacapt -Sy
+call pacapt -Sy
 checkForError
 
-pacapt -S make g++ gcc libgmp-dev iptables xl2tpd libssl-dev
+call pacapt -S make g++ gcc libgmp-dev iptables xl2tpd libssl-dev
 checkForError
 
 #################################################################
@@ -432,6 +432,14 @@ case "$1" in
 esac
 exit 0
 EOF
+
+chmod +x /etc/init.d/vpn-assist
+
+#################################################################
+
+bigEcho "Starting up VPN..."
+
+/etc/init.d/vpn-assist start
 
 #################################################################
 

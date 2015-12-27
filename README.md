@@ -24,12 +24,9 @@ your custom IPSec configuration files beforehand.
 
 ## Usage
 
-This installas an init.d script. Systemd is backwards compatible to these
+This installs an init.d script. Systemd is backwards compatible to these
 scripts and thus you can use it to `start|stop|restart` the VPN server, which
 should also start itself automatically on startup.
-
-On most systems you should be able to run: `service vpn-assist start` to start
-the VPN manually after the installation.
 
 ## Uninstallation
 
