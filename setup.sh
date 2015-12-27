@@ -49,6 +49,92 @@ function pacapt() {
   eval "$STRONGSWAN_TMP/pacapt $@"
 }
 
+function backupCredentials() {
+  if [ -f /etc/ipsec.secrets ]; then
+    cp /etc/ipsec.secrets /etc/ipsec.secrets.backup
+  fi
+
+  if [ -f /etc/ppp/l2tp-secrets ]; then
+    cp /etc/ppp/l2tp-secrets /etc/ppp/l2tp-secrets.backup
+  fi
+}
+
+function writeCredentials() {
+  bigEcho "Saving credentials"
+
+  cat > /etc/ipsec.secrets <<EOF
+# This file holds shared secrets or RSA private keys for authentication.
+# RSA private key for this host, authenticating it to any other host
+# which knows the public part.  Suitable public keys, for ipsec.conf, DNS,
+# or configuration of other implementations, can be extracted conveniently
+# with "ipsec showhostkey".
+
+: PSK "$STRONGSWAN_PSK"
+
+$STRONGSWAN_USER : EAP "$STRONGSWAN_PASSWORD"
+$STRONGSWAN_USER : XAUTH "$STRONGSWAN_PASSWORD"
+EOF
+
+  cat > /etc/ppp/l2tp-secrets <<EOF
+# This file holds secrets for L2TP authentication.
+# Username  Server  Secret  Hosts
+"$STRONGSWAN_USER" "*" "$STRONGSWAN_PASSWORD" "*"
+EOF
+}
+
+function getCredentials() {
+  bigEcho "Querying for credentials"
+
+  if [ "$STRONGSWAN_PSK" = "" ]; then
+    echo "The VPN needs a PSK (Pre-shared key)."
+    echo "Do you wish to set it yourself?"
+    echo "(Otherwise a random one is generated)"
+    while true; do
+      read -p "" yn
+      case $yn in
+        [Yy]* ) echo ""; echo "Enter your preferred key:"; read -p "" STRONGSWAN_PSK; break;;
+        [Nn]* ) generateKey; STRONGSWAN_PSK=KEY; break;;
+        * ) echo "Please answer with Yes or No [y|n].";;
+      esac
+    done
+
+    echo ""
+    echo "The PSK is: '$STRONGSWAN_PSK'."
+    echo ""
+  fi
+
+  #################################################################
+
+  if [ "$STRONGSWAN_USER" = "" ]; then
+    read -p "Please enter your preferred username [user]: " STRONGSWAN_USER
+
+    if [ "$STRONGSWAN_USER" = "" ]
+    then
+      STRONGSWAN_USER="vpn"
+    fi
+  fi
+
+  #################################################################
+
+  if [ "$STRONGSWAN_PASSWORD" = "" ]; then
+    echo "The VPN user '$STRONGSWAN_USER' needs a password."
+    echo "Do you wish to set it yourself?"
+    echo "(Otherwise a random one is generated)"
+    while true; do
+      read -p "" yn
+      case $yn in
+        [Yy]* ) echo ""; echo "Enter your preferred key:"; read -p "" STRONGSWAN_PASSWORD; break;;
+        [Nn]* ) generateKey; STRONGSWAN_PASSWORD=KEY; break;;
+        * ) echo "Please answer with Yes or No [y|n].";;
+      esac
+    done
+
+    echo ""
+    echo "The password is: '$STRONGSWAN_PASSWORD'."
+    echo ""
+  fi
+}
+
 #################################################################
 
 echo "This script will install strongSwan on this machine."
@@ -79,57 +165,6 @@ fi
 call chmod +x $STRONGSWAN_TMP/pacapt
 
 echo ""
-
-#################################################################
-
-if [ "$STRONGSWAN_PSK" = "" ]; then
-  echo "The VPN needs a PSK (Pre-shared key)."
-  echo "Do you wish to set it yourself?"
-  echo "(Otherwise a random one is generated)"
-  while true; do
-    read -p "" yn
-    case $yn in
-      [Yy]* ) echo ""; echo "Enter your preferred key:"; read -p "" STRONGSWAN_PSK; break;;
-      [Nn]* ) generateKey; STRONGSWAN_PSK=KEY; break;;
-      * ) echo "Please answer with Yes or No [y|n].";;
-    esac
-  done
-
-  echo ""
-  echo "The PSK is: '$STRONGSWAN_PSK'."
-  echo ""
-fi
-
-#################################################################
-
-if [ "$STRONGSWAN_USER" = "" ]; then
-  read -p "Please enter your preferred username [user]: " STRONGSWAN_USER
-
-  if [ "$STRONGSWAN_USER" = "" ]
-  then
-    STRONGSWAN_USER="vpn"
-  fi
-fi
-
-#################################################################
-
-if [ "$STRONGSWAN_PASSWORD" = "" ]; then
-  echo "The VPN user '$STRONGSWAN_USER' needs a password."
-  echo "Do you wish to set it yourself?"
-  echo "(Otherwise a random one is generated)"
-  while true; do
-    read -p "" yn
-    case $yn in
-      [Yy]* ) echo ""; echo "Enter your preferred key:"; read -p "" STRONGSWAN_PASSWORD; break;;
-      [Nn]* ) generateKey; STRONGSWAN_PASSWORD=KEY; break;;
-      * ) echo "Please answer with Yes or No [y|n].";;
-    esac
-  done
-
-  echo ""
-  echo "The password is: '$STRONGSWAN_PASSWORD'."
-  echo ""
-fi
 
 #################################################################
 
@@ -257,19 +292,6 @@ conn IKEv1-PSK-XAuth
 
 EOF
 
-cat > /etc/ipsec.secrets <<EOF
-# This file holds shared secrets or RSA private keys for authentication.
-# RSA private key for this host, authenticating it to any other host
-# which knows the public part.  Suitable public keys, for ipsec.conf, DNS,
-# or configuration of other implementations, can be extracted conveniently
-# with "ipsec showhostkey".
-
-: PSK "$STRONGSWAN_PSK"
-
-$STRONGSWAN_USER : EAP "$STRONGSWAN_PASSWORD"
-$STRONGSWAN_USER : XAUTH "$STRONGSWAN_PASSWORD"
-EOF
-
 cat > /etc/strongswan.conf <<EOF
 # /etc/strongswan.conf - strongSwan configuration file
 # strongswan.conf - strongSwan configuration file
@@ -327,11 +349,20 @@ lcp-echo-interval 60
 connect-delay 5000
 EOF
 
-cat > /etc/ppp/l2tp-secrets <<EOF
-# This file holds secrets for L2TP authentication.
-# Username  Server  Secret  Hosts
-"$STRONGSWAN_USER" "*" "$STRONGSWAN_PASSWORD" "*"
-EOF
+#################################################################
+
+if [[ -f /etc/ipsec.secrets ]] || [[ -f /etc/ppp/l2tp-secrets ]]; then
+  echo "Do you wish to replace your old credentials? (Including a backup)"
+
+  while true; do
+    read -p "" yn
+    case $yn in
+        [Yy]* ) backupCredentials; getCredentials; writeCredentials; break;;
+        [Nn]* ) break;;
+        * ) echo "Please answer with Yes or No [y|n].";;
+    esac
+  done
+fi
 
 #################################################################
 
@@ -347,7 +378,7 @@ done
 
 #################################################################
 
-bigEcho "Success!\n# Don't forget to open ports 1701, 4500 and 500 for UDP."
+bigEcho "Success!\n# Don't forget to open UDP ports 1701, 4500 and 500."
 
 sleep 2
 exit 0
