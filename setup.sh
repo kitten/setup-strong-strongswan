@@ -30,6 +30,14 @@ call () {
   eval "$@ > /dev/null 2>&1"
 }
 
+checkForError () {
+  if [ "$?" = "1" ]
+  then
+    bigEcho "An unexpected error occured!"
+    exit 1
+  fi
+}
+
 generateKey () {
   P1=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
   P2=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
@@ -166,14 +174,11 @@ echo ""
 
 bigEcho "Installing necessary dependencies"
 
-pacapt -S
-pacapt -S make g++ gcc libgmp-dev iptables xl2tpd libssl-dev
+pacapt -Sy
+checkForError
 
-if [ "$?" = "1" ]
-then
-  bigEcho "An unexpected error occured!"
-  exit 0
-fi
+pacapt -S make g++ gcc libgmp-dev iptables xl2tpd libssl-dev
+checkForError
 
 #################################################################
 
@@ -181,12 +186,7 @@ bigEcho "Installing StrongSwan..."
 
 call mkdir -p $STRONGSWAN_TMP/src
 curl -sSL "https://download.strongswan.org/strongswan-$STRONGSWAN_VERSION.tar.gz" | tar -zxC $STRONGSWAN_TMP/src --strip-components 1
-
-if [ "$?" = "1" ]
-then
-  bigEcho "An unexpected error occured while downloading strongSwan source!"
-  exit 0
-fi
+checkForError
 
 cd $STRONGSWAN_TMP/src
 ./configure --prefix=/usr --sysconfdir=/etc \
@@ -202,8 +202,13 @@ cd $STRONGSWAN_TMP/src
   --enable-eap-dynamic \
   --enable-xauth-eap \
   --enable-openssl
+checkForError
+
 make
+checkForError
+
 make install
+checkForError
 
 #################################################################
 
@@ -358,6 +363,9 @@ if [[ -f /etc/ipsec.secrets ]] || [[ -f /etc/ppp/l2tp-secrets ]]; then
         * ) echo "Please answer with Yes or No [y|n].";;
     esac
   done
+else
+  getCredentials
+  writeCredentials
 fi
 
 #################################################################
