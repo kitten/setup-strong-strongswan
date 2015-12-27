@@ -374,6 +374,59 @@ done
 
 #################################################################
 
+bigEcho "Create /etc/init.d/vpn-assist helper..."
+
+cat > /etc/init.d/vpn-assist <<'EOF'
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          vpn
+# Required-Start:    $network $local_fs
+# Required-Stop:     $network $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Strongswan and L2TPD helper
+# Description:       Service that starts up XL2TPD and IPSEC
+### END INIT INFO
+
+# Author: Phil Plückthun <phil@plckthn.me>
+
+case "$1" in
+  start)
+    iptables --table nat --append POSTROUTING --jump MASQUERADE
+    echo 1 > /proc/sys/net/ipv4/ip_forward
+    for each in /proc/sys/net/ipv4/conf/*
+    do
+      echo 0 > $each/accept_redirects
+      echo 0 > $each/send_redirects
+    done
+    /usr/sbin/xl2tpd -p /var/run/xl2tpd.pid -c /etc/xl2tpd/xl2tpd.conf -C /var/run/xl2tpd.control
+    ipsec start
+    ;;
+  stop)
+    iptables --table nat --flush
+    echo 0 > /proc/sys/net/ipv4/ip_forward
+    kill $(cat /var/run/xl2tpd.pid)
+    ipsec stop
+    ;;
+  restart)
+    echo "Restarting IPSec and XL2TPD"
+    iptables --table nat --append POSTROUTING --jump MASQUERADE
+    echo 1 > /proc/sys/net/ipv4/ip_forward
+    for each in /proc/sys/net/ipv4/conf/*
+    do
+      echo 0 > $each/accept_redirects
+      echo 0 > $each/send_redirects
+    done
+    kill $(cat /var/run/xl2tpd.pid)
+    /usr/sbin/xl2tpd -p /var/run/xl2tpd.pid -c /etc/xl2tpd/xl2tpd.conf -C /var/run/xl2tpd.control
+    ipsec restart
+    ;;
+esac
+exit 0
+EOF
+
+#################################################################
+
 echo "============================================================"
 echo "PSK Key: $STRONGSWAN_PSK"
 echo "Username: $STRONGSWAN_USER"
