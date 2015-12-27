@@ -128,10 +128,6 @@ function getCredentials() {
         * ) echo "Please answer with Yes or No [y|n].";;
       esac
     done
-
-    echo ""
-    echo "The password is: '$STRONGSWAN_PASSWORD'."
-    echo ""
   fi
 }
 
@@ -378,7 +374,16 @@ done
 
 #################################################################
 
-bigEcho "Success!\n# Don't forget to open UDP ports 1701, 4500 and 500."
+echo "============================================================"
+echo "PSK Key: $STRONGSWAN_PSK"
+echo "Username: $STRONGSWAN_USER"
+echo "Password: $STRONGSWAN_PASSWORD"
+echo "============================================================"
+
+echo "Note:"
+echo "* Before connecting with a Windows client, please see: http://support.microsoft.com/kb/926179"
+echo "* UDP Ports 1701, 500 and 4500 must be opened"
+echo "* A specific host or public IP is not necessary as Strongswan utilises NAT traversal"
 
 sleep 2
 exit 0
