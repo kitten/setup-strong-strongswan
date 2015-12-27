@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #    Setup Strong strongSwan server for Ubuntu and Debian
 #
 #    Copyright (C) 2014-2015 Phil Plückthun <phil@plckthn.me>
@@ -26,18 +26,18 @@ STRONGSWAN_VERSION="5.3.5"
 #################################################################
 # Functions
 
-function call() {
+call () {
   eval "$@ > /dev/null 2>&1"
 }
 
-function generateKey() {
+generateKey () {
   P1=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
   P2=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
   P3=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
   KEY="$P1$P2$P3"
 }
 
-function bigEcho() {
+bigEcho () {
   echo ""
   echo "============================================================"
   echo "$@"
@@ -45,11 +45,11 @@ function bigEcho() {
   echo ""
 }
 
-function pacapt() {
+pacapt () {
   eval "$STRONGSWAN_TMP/pacapt $@"
 }
 
-function backupCredentials() {
+backupCredentials () {
   if [ -f /etc/ipsec.secrets ]; then
     cp /etc/ipsec.secrets /etc/ipsec.secrets.backup
   fi
@@ -59,7 +59,7 @@ function backupCredentials() {
   fi
 }
 
-function writeCredentials() {
+writeCredentials () {
   bigEcho "Saving credentials"
 
   cat > /etc/ipsec.secrets <<EOF
@@ -82,7 +82,7 @@ EOF
 EOF
 }
 
-function getCredentials() {
+getCredentials () {
   bigEcho "Querying for credentials"
 
   if [ "$STRONGSWAN_PSK" = "" ]; then
