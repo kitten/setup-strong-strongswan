@@ -83,7 +83,7 @@ $STRONGSWAN_USER : EAP "$STRONGSWAN_PASSWORD"
 $STRONGSWAN_USER : XAUTH "$STRONGSWAN_PASSWORD"
 EOF
 
-  cat > /etc/ppp/l2tp-secrets <<EOF
+  cat > /etc/ppp/chap-secrets <<EOF
 # This file holds secrets for L2TP authentication.
 # Username  Server  Secret  Hosts
 "$STRONGSWAN_USER" "*" "$STRONGSWAN_PASSWORD" "*"
@@ -316,7 +316,7 @@ EOF
 cat > /etc/xl2tpd/xl2tpd.conf <<EOF
 [global]
 port = 1701
-auth file = /etc/ppp/l2tp-secrets
+auth file = /etc/ppp/chap-secrets
 debug avp = yes
 debug network = yes
 debug state = yes
@@ -352,7 +352,7 @@ EOF
 
 #################################################################
 
-if [[ -f /etc/ipsec.secrets ]] || [[ -f /etc/ppp/l2tp-secrets ]]; then
+if [[ -f /etc/ipsec.secrets ]] || [[ -f /etc/ppp/chap-secrets ]]; then
   echo "Do you wish to replace your old credentials? (Including a backup)"
 
   while true; do
