@@ -92,7 +92,7 @@ getCredentials () {
 
   if [ "$STRONGSWAN_PSK" = "" ]; then
     echo "The VPN needs a PSK (Pre-shared key)."
-    echo "Do you wish to set it yourself?"
+    echo "Do you wish to set it yourself? [y|n]"
     echo "(Otherwise a random one is generated)"
     while true; do
       read -p "" yn
@@ -123,7 +123,7 @@ getCredentials () {
 
   if [ "$STRONGSWAN_PASSWORD" = "" ]; then
     echo "The VPN user '$STRONGSWAN_USER' needs a password."
-    echo "Do you wish to set it yourself?"
+    echo "Do you wish to set it yourself? [y|n]"
     echo "(Otherwise a random one is generated)"
     while true; do
       read -p "" yn
@@ -139,7 +139,7 @@ getCredentials () {
 #################################################################
 
 echo "This script will install strongSwan on this machine."
-echo "Do you wish to continue?"
+echo "Do you wish to continue? [y|n]"
 
 while true; do
   read -p "" yn
@@ -350,7 +350,7 @@ EOF
 #################################################################
 
 if [[ -f /etc/ipsec.secrets ]] || [[ -f /etc/ppp/chap-secrets ]]; then
-  echo "Do you wish to replace your old credentials? (Including a backup)"
+  echo "Do you wish to replace your old credentials? (Including a backup) [y|n]"
 
   while true; do
     read -p "" yn
