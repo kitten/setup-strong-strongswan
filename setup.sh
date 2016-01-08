@@ -111,7 +111,7 @@ getCredentials () {
   #################################################################
 
   if [ "$STRONGSWAN_USER" = "" ]; then
-    read -p "Please enter your preferred username [user]: " STRONGSWAN_USER
+    read -p "Please enter your preferred username [vpn]: " STRONGSWAN_USER
 
     if [ "$STRONGSWAN_USER" = "" ]
     then
