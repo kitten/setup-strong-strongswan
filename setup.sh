@@ -39,10 +39,7 @@ checkForError () {
 }
 
 generateKey () {
-  P1=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
-  P2=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
-  P3=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
-  KEY="$P1$P2$P3"
+  KEY=`cat /dev/urandom | tr -dc _A-Z-a-z-0-9 | head -c 16`
 }
 
 bigEcho () {
@@ -101,7 +98,7 @@ getCredentials () {
       read -p "" yn
       case $yn in
         [Yy]* ) echo ""; echo "Enter your preferred key:"; read -p "" STRONGSWAN_PSK; break;;
-        [Nn]* ) generateKey; STRONGSWAN_PSK=KEY; break;;
+        [Nn]* ) generateKey; STRONGSWAN_PSK=$KEY; break;;
         * ) echo "Please answer with Yes or No [y|n].";;
       esac
     done
@@ -132,7 +129,7 @@ getCredentials () {
       read -p "" yn
       case $yn in
         [Yy]* ) echo ""; echo "Enter your preferred key:"; read -p "" STRONGSWAN_PASSWORD; break;;
-        [Nn]* ) generateKey; STRONGSWAN_PASSWORD=KEY; break;;
+        [Nn]* ) generateKey; STRONGSWAN_PASSWORD=$KEY; break;;
         * ) echo "Please answer with Yes or No [y|n].";;
       esac
     done
