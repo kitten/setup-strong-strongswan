@@ -39,10 +39,7 @@ checkForError () {
 }
 
 generateKey () {
-  P1=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
-  P2=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
-  P3=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
-  KEY="$P1$P2$P3"
+  KEY=`cat /dev/urandom | tr -dc _A-Z-a-z-0-9 | head -c 16`
 }
 
 bigEcho () {
@@ -95,13 +92,13 @@ getCredentials () {
 
   if [ "$STRONGSWAN_PSK" = "" ]; then
     echo "The VPN needs a PSK (Pre-shared key)."
-    echo "Do you wish to set it yourself?"
+    echo "Do you wish to set it yourself? [y|n]"
     echo "(Otherwise a random one is generated)"
     while true; do
       read -p "" yn
       case $yn in
         [Yy]* ) echo ""; echo "Enter your preferred key:"; read -p "" STRONGSWAN_PSK; break;;
-        [Nn]* ) generateKey; STRONGSWAN_PSK=KEY; break;;
+        [Nn]* ) generateKey; STRONGSWAN_PSK=$KEY; break;;
         * ) echo "Please answer with Yes or No [y|n].";;
       esac
     done
@@ -114,7 +111,7 @@ getCredentials () {
   #################################################################
 
   if [ "$STRONGSWAN_USER" = "" ]; then
-    read -p "Please enter your preferred username [user]: " STRONGSWAN_USER
+    read -p "Please enter your preferred username [vpn]: " STRONGSWAN_USER
 
     if [ "$STRONGSWAN_USER" = "" ]
     then
@@ -126,13 +123,13 @@ getCredentials () {
 
   if [ "$STRONGSWAN_PASSWORD" = "" ]; then
     echo "The VPN user '$STRONGSWAN_USER' needs a password."
-    echo "Do you wish to set it yourself?"
+    echo "Do you wish to set it yourself? [y|n]"
     echo "(Otherwise a random one is generated)"
     while true; do
       read -p "" yn
       case $yn in
         [Yy]* ) echo ""; echo "Enter your preferred key:"; read -p "" STRONGSWAN_PASSWORD; break;;
-        [Nn]* ) generateKey; STRONGSWAN_PASSWORD=KEY; break;;
+        [Nn]* ) generateKey; STRONGSWAN_PASSWORD=$KEY; break;;
         * ) echo "Please answer with Yes or No [y|n].";;
       esac
     done
@@ -142,7 +139,7 @@ getCredentials () {
 #################################################################
 
 echo "This script will install strongSwan on this machine."
-echo "Do you wish to continue?"
+echo "Do you wish to continue? [y|n]"
 
 while true; do
   read -p "" yn
@@ -353,7 +350,7 @@ EOF
 #################################################################
 
 if [[ -f /etc/ipsec.secrets ]] || [[ -f /etc/ppp/chap-secrets ]]; then
-  echo "Do you wish to replace your old credentials? (Including a backup)"
+  echo "Do you wish to replace your old credentials? (Including a backup) [y|n]"
 
   while true; do
     read -p "" yn
