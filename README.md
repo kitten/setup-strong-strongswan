@@ -8,8 +8,8 @@
 This script doesn't need a domain or specific public IP to work.
 
 ```
-wget https://raw.github.com/philplckthun/setup-strong-strongswan/master/setup.sh
-sudo bash ./setup.sh
+curl -L -O https://raw.github.com/philplckthun/setup-strong-strongswan/master/setup.sh
+sudo ./setup.sh
 ```
 
 The script will lead you through the installation process. If you haven't run
