@@ -174,7 +174,7 @@ bigEcho "Installing necessary dependencies"
 call pacapt -Sy
 checkForError
 
-call pacapt -S make g++ gcc libgmp-dev iptables xl2tpd libssl-dev
+call pacapt -S -- -y make g++ gcc libgmp-dev iptables xl2tpd libssl-dev
 checkForError
 
 #################################################################
@@ -206,12 +206,6 @@ checkForError
 
 make install
 checkForError
-
-#################################################################
-
-bigEcho "Cleaning up..."
-
-call rm -rf $STRONGSWAN_TMP
 
 #################################################################
 
@@ -450,6 +444,12 @@ echo "Note:"
 echo "* Before connecting with a Windows client, please see: http://support.microsoft.com/kb/926179"
 echo "* UDP Ports 1701, 500 and 4500 must be opened"
 echo "* A specific host or public IP is not necessary as Strongswan utilises NAT traversal"
+
+#################################################################
+
+bigEcho "Cleaning up..."
+
+call rm -rf $STRONGSWAN_TMP
 
 sleep 2
 exit 0
