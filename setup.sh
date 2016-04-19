@@ -174,7 +174,7 @@ bigEcho "Installing necessary dependencies"
 call pacapt -Sy
 checkForError
 
-call pacapt -S make g++ gcc libgmp-dev iptables xl2tpd libssl-dev
+call pacapt -S -- -y make g++ gcc libgmp-dev iptables xl2tpd libssl-dev
 checkForError
 
 #################################################################
