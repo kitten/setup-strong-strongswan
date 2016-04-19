@@ -209,12 +209,6 @@ checkForError
 
 #################################################################
 
-bigEcho "Cleaning up..."
-
-call rm -rf $STRONGSWAN_TMP
-
-#################################################################
-
 bigEcho "Preparing various configuration files..."
 
 cat > /etc/ipsec.conf <<EOF
@@ -450,6 +444,12 @@ echo "Note:"
 echo "* Before connecting with a Windows client, please see: http://support.microsoft.com/kb/926179"
 echo "* UDP Ports 1701, 500 and 4500 must be opened"
 echo "* A specific host or public IP is not necessary as Strongswan utilises NAT traversal"
+
+#################################################################
+
+bigEcho "Cleaning up..."
+
+call rm -rf $STRONGSWAN_TMP
 
 sleep 2
 exit 0
