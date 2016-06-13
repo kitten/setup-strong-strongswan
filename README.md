@@ -9,6 +9,7 @@ This script doesn't need a domain or specific public IP to work.
 
 ```
 curl -L -O https://raw.github.com/philplckthun/setup-strong-strongswan/master/setup.sh
+chmod +x setup.sh
 sudo ./setup.sh
 ```
 
