@@ -29,6 +29,9 @@ This installs an init.d script. Systemd is backwards compatible to these
 scripts and thus you can use it to `start|stop|restart` the VPN server, which
 should also start itself automatically on startup.
 
+You can manage accounts for your VPN via `/etc/ipsec.secrets` and `etc/ppp/chap-secrets`.
+[@zackdevine's account managing script automates this process](https://github.com/zackdevine/setup-strongswan-vpn-account)
+
 ## Uninstallation
 
 Download the Strongswan source and run:
