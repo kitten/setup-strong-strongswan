@@ -18,9 +18,11 @@ fi
 #################################################################
 # Variables
 
-STRONGSWAN_TMP="/tmp/strongswan"
-STRONGSWAN_VERSION="5.3.5"
+[ -z "$STRONGSWAN_TMP" ] && STRONGSWAN_TMP="/tmp/strongswan"
+[ -z "$STRONGSWAN_VERSION" ] && STRONGSWAN_VERSION="5.3.5"
+[ -z "$KEYSIZE" ] && KEYSIZE=16
 #STRONGSWAN_USER
+#STRONGSWAN_PASSWORD
 #STRONGSWAN_PSK
 
 #################################################################
@@ -39,7 +41,7 @@ checkForError () {
 }
 
 generateKey () {
-  KEY=`cat /dev/urandom | tr -dc _A-Z-a-z-0-9 | head -c 16`
+  KEY=`cat /dev/urandom | tr -dc _A-Z-a-z-0-9 | head -c $KEYSIZE`
 }
 
 bigEcho () {
