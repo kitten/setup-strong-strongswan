@@ -25,6 +25,12 @@ fi
 #STRONGSWAN_PASSWORD
 #STRONGSWAN_PSK
 
+if [ -z  "$INTERACTIVE" ]; then
+  INTERACTIVE=1
+fi
+[[ $INTERACTIVE = "true" ]]  && INTERACTIVE=1
+[[ $INTERACTIVE = "false" ]] && INTERACTIVE=0
+
 #################################################################
 # Functions
 
@@ -97,7 +103,13 @@ getCredentials () {
     echo "Do you wish to set it yourself? [y|n]"
     echo "(Otherwise a random one is generated)"
     while true; do
-      read -p "" yn
+      if [ $INTERACTIVE -eq 0 ]; then
+        echo "Auto-Generating PSK..."
+        yn="n"
+      else
+        read -p "" yn
+      fi
+
       case $yn in
         [Yy]* ) echo ""; echo "Enter your preferred key:"; read -p "" STRONGSWAN_PSK; break;;
         [Nn]* ) generateKey; STRONGSWAN_PSK=$KEY; break;;
@@ -113,7 +125,11 @@ getCredentials () {
   #################################################################
 
   if [ "$STRONGSWAN_USER" = "" ]; then
-    read -p "Please enter your preferred username [vpn]: " STRONGSWAN_USER
+    if [ $INTERACTIVE -eq 0 ]; then
+      STRONGSWAN_USER=""
+    else
+      read -p "Please enter your preferred username [vpn]: " STRONGSWAN_USER
+    fi
 
     if [ "$STRONGSWAN_USER" = "" ]
     then
@@ -128,7 +144,13 @@ getCredentials () {
     echo "Do you wish to set it yourself? [y|n]"
     echo "(Otherwise a random one is generated)"
     while true; do
-      read -p "" yn
+      if [ $INTERACTIVE -eq 0 ]; then
+        echo "Auto-Generating Password..."
+        yn="n"
+      else
+        read -p "" yn
+      fi
+
       case $yn in
         [Yy]* ) echo ""; echo "Enter your preferred key:"; read -p "" STRONGSWAN_PASSWORD; break;;
         [Nn]* ) generateKey; STRONGSWAN_PASSWORD=$KEY; break;;
@@ -140,17 +162,21 @@ getCredentials () {
 
 #################################################################
 
-echo "This script will install strongSwan on this machine."
-echo "Do you wish to continue? [y|n]"
+if [ $INTERACTIVE -eq 0 ]; then
+  bigEcho "Automating installation in non-interactive mode..."
+else
+  echo "This script will install strongSwan on this machine."
+  echo "Do you wish to continue? [y|n]"
 
-while true; do
-  read -p "" yn
-  case $yn in
-      [Yy]* ) break;;
-      [Nn]* ) exit 0;;
-      * ) echo "Please answer with Yes or No [y|n].";;
-  esac
-done
+  while true; do
+    read -p "" yn
+    case $yn in
+        [Yy]* ) break;;
+        [Nn]* ) exit 0;;
+        * ) echo "Please answer with Yes or No [y|n].";;
+    esac
+  done
+fi
 
 #################################################################
 
@@ -350,6 +376,11 @@ if [[ -f /etc/ipsec.secrets ]] || [[ -f /etc/ppp/chap-secrets ]]; then
   echo "Do you wish to replace your old credentials? (Including a backup) [y|n]"
 
   while true; do
+    if [ $INTERACTIVE -eq 0 ]; then
+      echo "Old credentials were found but to play safe, they will not be automatically replaced. Delete them manually if you want them replaced."
+      break
+    fi
+
     read -p "" yn
     case $yn in
         [Yy]* ) backupCredentials; getCredentials; writeCredentials; break;;
