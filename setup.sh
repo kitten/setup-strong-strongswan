@@ -174,7 +174,7 @@ bigEcho "Installing necessary dependencies"
 call pacapt -Sy
 checkForError
 
-call pacapt -S -- -y make g++ gcc libgmp-dev iptables xl2tpd libssl-dev
+call pacapt -S -- -y make g++ gcc iptables xl2tpd libssl-dev
 checkForError
 
 #################################################################
@@ -198,7 +198,8 @@ cd $STRONGSWAN_TMP/src
   --enable-eap-tnc \
   --enable-eap-dynamic \
   --enable-xauth-eap \
-  --enable-openssl
+  --enable-openssl \
+  --disable-gmp
 checkForError
 
 make
