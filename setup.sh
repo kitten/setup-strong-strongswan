@@ -166,7 +166,7 @@ if [ $INTERACTIVE -eq 0 ]; then
   bigEcho "Automating installation in non-interactive mode..."
 else
   echo "This script will install strongSwan on this machine."
-  echo "Do you wish to continue? [y|n]"
+  echo -n "Do you wish to continue? [y|n] "
 
   while true; do
     read -p "" yn
@@ -202,7 +202,7 @@ bigEcho "Installing necessary dependencies"
 call pacapt -Sy
 checkForError
 
-call pacapt -S -- -y make g++ gcc iptables xl2tpd libssl-dev module-init-tools curl
+call pacapt -S -- -y make g++ gcc iptables xl2tpd libssl-dev module-init-tools curl openssl-devel
 checkForError
 
 #################################################################
