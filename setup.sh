@@ -25,10 +25,10 @@ fi
 #STRONGSWAN_PASSWORD
 #STRONGSWAN_PSK
 
-if [ -z  "$INTERACTIVE" ]; then
+if [ -z "$INTERACTIVE" ]; then
   INTERACTIVE=1
 fi
-[[ $INTERACTIVE = "true" ]]  && INTERACTIVE=1
+[[ $INTERACTIVE = "true" ]] && INTERACTIVE=1
 [[ $INTERACTIVE = "false" ]] && INTERACTIVE=0
 
 #################################################################
@@ -125,7 +125,7 @@ getCredentials () {
   #################################################################
 
   if [ "$STRONGSWAN_USER" = "" ]; then
-    if [ $INTERACTIVE -eq 0 ]; then
+    if [ "$INTERACTIVE" = "0" ]; then
       STRONGSWAN_USER=""
     else
       read -p "Please enter your preferred username [vpn]: " STRONGSWAN_USER
@@ -144,7 +144,7 @@ getCredentials () {
     echo "Do you wish to set it yourself? [y|n]"
     echo "(Otherwise a random one is generated)"
     while true; do
-      if [ $INTERACTIVE -eq 0 ]; then
+      if [ "$INTERACTIVE" = "0" ]; then
         echo "Auto-Generating Password..."
         yn="n"
       else
@@ -162,7 +162,7 @@ getCredentials () {
 
 #################################################################
 
-if [ $INTERACTIVE -eq 0 ]; then
+if [ "$INTERACTIVE" = "0" ]; then
   bigEcho "Automating installation in non-interactive mode..."
 else
   echo "This script will install strongSwan on this machine."
@@ -183,10 +183,33 @@ fi
 # Checks if curl is installed
 
 call which curl
-if [ "$?" = "1" ]
-then
+if [ "$?" = "1" ]; then
   bigEcho "This script requires curl to be installed, to work correctly."
   exit 1
+fi
+
+#################################################################
+
+# Checks if an ipsec binary is already installed
+
+call which ipsec
+if [ "$?" = "0" ]; then
+  echo "An ipsec binary is already installed and present on this machine!"
+  
+  if [ "$INTERACTIVE" = "0" ]; then
+    bigEcho "Ignored this warning in non-interactive mode..."
+  else
+    echo -n "Do you wish to continue? [y|n] "
+
+    while true; do
+      read -p "" yn
+      case $yn in
+          [Yy]* ) break;;
+          [Nn]* ) exit 0;;
+          * ) echo "Please answer with Yes or No [y|n].";;
+      esac
+    done
+  fi
 fi
 
 #################################################################
@@ -196,8 +219,7 @@ call rm -rf $STRONGSWAN_TMP
 call mkdir -p $STRONGSWAN_TMP
 
 curl -sSL "https://github.com/icy/pacapt/raw/ng/pacapt" > $STRONGSWAN_TMP/pacapt
-if [ "$?" = "1" ]
-then
+if [ "$?" = "1" ]; then
   bigEcho "An unexpected error occured while downloading pacapt!"
   exit 1
 fi
@@ -387,7 +409,7 @@ if [[ -f /etc/ipsec.secrets ]] || [[ -f /etc/ppp/chap-secrets ]]; then
   echo "Do you wish to replace your old credentials? (Including a backup) [y|n]"
 
   while true; do
-    if [ $INTERACTIVE -eq 0 ]; then
+    if [ "$INTERACTIVE" = "0" ]; then
       echo "Old credentials were found but to play safe, they will not be automatically replaced. Delete them manually if you want them replaced."
       break
     fi
