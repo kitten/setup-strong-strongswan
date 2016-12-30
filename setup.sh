@@ -180,6 +180,17 @@ fi
 
 #################################################################
 
+# Checks if curl is installed
+
+call which curl
+if [ "$?" = "1" ]
+then
+  bigEcho "This script requires curl to be installed, to work correctly."
+  exit 1
+fi
+
+#################################################################
+
 # Clean up and create compilation environment
 call rm -rf $STRONGSWAN_TMP
 call mkdir -p $STRONGSWAN_TMP
@@ -188,7 +199,7 @@ curl -sSL "https://github.com/icy/pacapt/raw/ng/pacapt" > $STRONGSWAN_TMP/pacapt
 if [ "$?" = "1" ]
 then
   bigEcho "An unexpected error occured while downloading pacapt!"
-  exit 0
+  exit 1
 fi
 
 call chmod +x $STRONGSWAN_TMP/pacapt
