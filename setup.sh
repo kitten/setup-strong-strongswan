@@ -210,10 +210,10 @@ echo ""
 
 bigEcho "Installing necessary dependencies"
 
-call pacapt -Sy
+call pacapt -Sy --noconfirm
 checkForError
 
-call pacapt -S -- -y make g++ gcc iptables xl2tpd libssl-dev module-init-tools curl openssl-devel
+call pacapt -S --noconfirm -- make g++ gcc iptables xl2tpd libssl-dev module-init-tools curl openssl-devel
 checkForError
 
 #################################################################
